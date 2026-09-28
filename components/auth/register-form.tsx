@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { CircleCheck, Loader2 } from "lucide-react";
 
 import { FormError } from "@/components/shared/form-error";
 import { FormField, fieldMessageId } from "@/components/shared/form-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useRegister } from "@/hooks/use-auth";
+import { useRegister, useUsernameAvailability } from "@/hooks/use-auth";
 import { ApiClientError, getErrorMessage } from "@/lib/api-client";
 import {
   registerFormSchema,
@@ -47,6 +47,25 @@ export function RegisterForm() {
   const hasFieldErrors =
     registerUser.error instanceof ApiClientError && !!registerUser.error.fields;
 
+  // Live availability check (bloom filter on the server). Advisory only:
+  // the register endpoint re-checks and returns 409 if it's taken.
+  const username = useWatch({ control: form.control, name: "username" });
+  const availability = useUsernameAvailability(username);
+  const usernameError =
+    errors.username?.message ??
+    (availability.available === false ? "This username is taken" : undefined);
+  const usernameHint = availability.isChecking ? (
+    <span className="inline-flex items-center gap-1.5">
+      <Loader2 className="size-3.5 animate-spin" aria-hidden /> Checking availability…
+    </span>
+  ) : availability.available ? (
+    <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+      <CircleCheck className="size-3.5" aria-hidden /> Username is available
+    </span>
+  ) : (
+    "3–20 characters: letters, numbers, and underscores."
+  );
+
   return (
     <form onSubmit={onSubmit} noValidate className="grid gap-4">
       <FormError
@@ -58,8 +77,8 @@ export function RegisterForm() {
       <FormField
         id="username"
         label="Username"
-        error={errors.username?.message}
-        hint="3–20 characters: letters, numbers, and underscores."
+        error={usernameError}
+        hint={usernameHint}
       >
         <Input
           id="username"
@@ -67,7 +86,7 @@ export function RegisterForm() {
           autoCapitalize="none"
           spellCheck={false}
           autoFocus
-          aria-invalid={!!errors.username}
+          aria-invalid={!!usernameError}
           aria-describedby={fieldMessageId("username")}
           {...form.register("username")}
         />

@@ -4,13 +4,47 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { apiFetch, getErrorMessage } from "@/lib/api-client";
-import type { LoginInput, RegisterInput } from "@/schemas/auth";
+import { usernameSchema, type LoginInput, type RegisterInput } from "@/schemas/auth";
 import type { PublicUser } from "@/types/user";
 
 export const authKeys = {
   me: ["me"] as const,
+  usernameCheck: (username: string) => ["username-check", username] as const,
 };
+
+const USERNAME_CHECK_DEBOUNCE_MS = 400;
+
+/**
+ * Debounced "is this username taken?" check against the bloom-filter-backed API.
+ * Only runs for usernames that already pass client validation.
+ */
+export function useUsernameAvailability(rawUsername: string) {
+  const debounced = useDebouncedValue(rawUsername, USERNAME_CHECK_DEBOUNCE_MS);
+  const parsed = usernameSchema.safeParse(debounced);
+  const username = parsed.success ? parsed.data : "";
+
+  const query = useQuery({
+    queryKey: authKeys.usernameCheck(username),
+    queryFn: async () =>
+      (
+        await apiFetch<{ username: string; available: boolean }>(
+          `/api/auth/username-check?username=${encodeURIComponent(username)}`
+        )
+      ).available,
+    enabled: username !== "",
+    staleTime: 60_000,
+  });
+
+  const settled = rawUsername === debounced;
+  return {
+    /** Still typing, or waiting on the server. */
+    isChecking: username !== "" && (!settled || query.isFetching),
+    /** null until there's an answer for the current input. */
+    available: settled && username !== "" && query.data !== undefined ? query.data : null,
+  };
+}
 
 type UserResponse = { user: PublicUser };
 
