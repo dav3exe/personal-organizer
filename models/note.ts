@@ -4,7 +4,6 @@ import {
   Schema,
   model,
   models,
-  type HydratedDocument,
   type InferSchemaType,
   type Model,
 } from "mongoose";
@@ -34,7 +33,6 @@ const noteSchema = new Schema(
 noteSchema.index({ userId: 1, createdAt: -1 });
 
 export type NoteAttrs = InferSchemaType<typeof noteSchema>;
-export type NoteDocument = HydratedDocument<NoteAttrs>;
 
 export const Note: Model<NoteAttrs> =
   (models.Note as Model<NoteAttrs> | undefined) ??

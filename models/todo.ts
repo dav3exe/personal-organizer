@@ -4,7 +4,6 @@ import {
   Schema,
   model,
   models,
-  type HydratedDocument,
   type InferSchemaType,
   type Model,
 } from "mongoose";
@@ -31,7 +30,6 @@ const todoSchema = new Schema(
 todoSchema.index({ userId: 1, createdAt: -1 });
 
 export type TodoAttrs = InferSchemaType<typeof todoSchema>;
-export type TodoDocument = HydratedDocument<TodoAttrs>;
 
 export const Todo: Model<TodoAttrs> =
   (models.Todo as Model<TodoAttrs> | undefined) ??

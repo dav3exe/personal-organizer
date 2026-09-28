@@ -2,9 +2,9 @@ import { z } from "zod";
 
 export const USERNAME_MIN = 3;
 export const USERNAME_MAX = 20;
-export const PASSWORD_MIN = 8;
+const PASSWORD_MIN = 8;
 /** bcrypt only uses the first 72 bytes of a password, so reject anything longer. */
-export const PASSWORD_MAX_BYTES = 72;
+const PASSWORD_MAX_BYTES = 72;
 
 export const usernameSchema = z
   .string()
@@ -17,7 +17,7 @@ export const usernameSchema = z
     "Username can only contain letters, numbers, and underscores"
   );
 
-export const emailSchema = z
+const emailSchema = z
   .string()
   .trim()
   .toLowerCase()
@@ -44,6 +44,8 @@ export const loginSchema = z.object({
   email: emailSchema,
   password: z.string().min(1, "Password is required"),
 });
+
+export const usernameCheckQuerySchema = z.object({ username: usernameSchema });
 
 /** Client-only: adds a confirmation field that never leaves the browser. */
 export const registerFormSchema = registerSchema
