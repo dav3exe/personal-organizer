@@ -5,9 +5,13 @@ import mongoose from "mongoose";
 
 // Local fix for "querySrv ECONNREFUSED" on some Windows networks.
 // Only runs when MONGODB_DNS_SERVERS is set (local .env). Never set it on Vercel.
+// Both resolvers are set: the MongoDB driver uses dns.promises, which inside
+// Next.js does not pick up servers set through the callback API.
 const dnsServers = process.env.MONGODB_DNS_SERVERS;
 if (dnsServers) {
-  dns.setServers(dnsServers.split(",").map((server) => server.trim()));
+  const servers = dnsServers.split(",").map((server) => server.trim());
+  dns.setServers(servers);
+  dns.promises.setServers(servers);
 }
 
 type MongooseCache = {
