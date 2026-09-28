@@ -1,10 +1,11 @@
 import "server-only";
 
 import bcrypt from "bcryptjs";
-import { isValidObjectId, mongo } from "mongoose";
+import { mongo } from "mongoose";
 
 import { errors } from "@/lib/api-error";
 import { connectDB } from "@/lib/db";
+import { isObjectIdString } from "@/lib/validation";
 import { User, type UserDocument } from "@/models/user";
 import type { LoginInput, RegisterInput } from "@/schemas/auth";
 import type { PublicUser } from "@/types/user";
@@ -95,7 +96,7 @@ export async function loginUser(input: LoginInput): Promise<PublicUser> {
 }
 
 export async function getUserById(userId: string): Promise<PublicUser | null> {
-  if (!isValidObjectId(userId)) return null;
+  if (!isObjectIdString(userId)) return null;
   await connectDB();
   const user = await User.findById(userId);
   return user ? toPublicUser(user) : null;

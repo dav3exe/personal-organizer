@@ -4,13 +4,13 @@ import { cookies } from "next/headers";
 import { SignJWT, jwtVerify, errors as joseErrors } from "jose";
 
 import { errors } from "@/lib/api-error";
+import { isObjectIdString } from "@/lib/validation";
 
 // No database imports here: proxy.ts uses this file and must stay DB-free.
 
 export const SESSION_COOKIE = "po_session";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
 const JWT_ALGORITHM = "HS256";
-const OBJECT_ID_PATTERN = /^[a-f\d]{24}$/i;
 
 export type Session = { userId: string };
 
@@ -48,9 +48,7 @@ export async function verifySessionToken(
     const { payload } = await jwtVerify(token, secret, {
       algorithms: [JWT_ALGORITHM],
     });
-    if (typeof payload.sub !== "string" || !OBJECT_ID_PATTERN.test(payload.sub)) {
-      return null;
-    }
+    if (!isObjectIdString(payload.sub)) return null;
     return { userId: payload.sub };
   } catch (error) {
     if (error instanceof joseErrors.JOSEError) return null;
