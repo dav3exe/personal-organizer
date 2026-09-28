@@ -38,5 +38,16 @@ export const updateTodoSchema = z
     message: "Provide at least one field to update",
   });
 
+/**
+ * Form values: inputs always give strings, so "" means "not set".
+ * (Avoids z.coerce, which would turn an empty date into a bogus value.)
+ */
+export const todoFormSchema = z.object({
+  title: titleSchema,
+  description: descriptionSchema,
+  dueDate: z.union([z.literal(""), dueDateSchema]),
+});
+
 export type CreateTodoInput = z.infer<typeof createTodoSchema>;
+export type TodoFormValues = z.infer<typeof todoFormSchema>;
 export type UpdateTodoInput = z.infer<typeof updateTodoSchema>;
