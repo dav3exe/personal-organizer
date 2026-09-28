@@ -1,5 +1,7 @@
 # Personal Organizer
 
+**Live app:** https://personal-organizer-nu-eosin.vercel.app
+
 A multi-tenant to-do and notes app. Users register, sign in, and manage their own to-dos and notes. Each account's data is fully isolated from every other account.
 
 **Feature of choice: multi-tenancy.** A user can never read, edit, or delete another user's data, even by guessing IDs. See [How tenant isolation works](#how-tenant-isolation-works).
@@ -66,7 +68,7 @@ npm run dev             # http://localhost:3000
 ```bash
 npm run dev                                               # terminal 1
 npm run test:isolation                                    # terminal 2
-BASE_URL=https://your-app.vercel.app npm run test:isolation   # or against a deployment
+BASE_URL=https://personal-organizer-nu-eosin.vercel.app npm run test:isolation   # or against the live app
 ```
 
 The script deletes the to-dos and notes it creates. The two `iso_a_*` / `iso_b_*` test users stay in the database.
