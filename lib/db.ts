@@ -1,6 +1,14 @@
 import "server-only";
 
+import dns from "node:dns";
 import mongoose from "mongoose";
+
+// Local fix for "querySrv ECONNREFUSED" on some Windows networks.
+// Only runs when MONGODB_DNS_SERVERS is set (local .env). Never set it on Vercel.
+const dnsServers = process.env.MONGODB_DNS_SERVERS;
+if (dnsServers) {
+  dns.setServers(dnsServers.split(",").map((server) => server.trim()));
+}
 
 type MongooseCache = {
   conn: typeof mongoose | null;
