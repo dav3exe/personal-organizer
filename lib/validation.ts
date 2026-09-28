@@ -2,6 +2,22 @@ import type { z } from "zod";
 
 import { errors } from "@/lib/api-error";
 
+const OBJECT_ID_PATTERN = /^[a-f\d]{24}$/i;
+
+/** True for a 24-character hex MongoDB ObjectId string. */
+export function isObjectIdString(value: unknown): value is string {
+  return typeof value === "string" && OBJECT_ID_PATTERN.test(value);
+}
+
+/**
+ * Validates a route `id` param. A malformed id gets the same 404 as a record
+ * that doesn't exist or belongs to another user, so nothing is revealed.
+ */
+export function parseObjectId(id: string): string {
+  if (!isObjectIdString(id)) throw errors.notFound();
+  return id;
+}
+
 function toFieldErrors(error: z.ZodError): Record<string, string> {
   const fields: Record<string, string> = {};
   for (const issue of error.issues) {
