@@ -45,5 +45,14 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+/** Client-only: adds a confirmation field that never leaves the browser. */
+export const registerFormSchema = registerSchema
+  .extend({ confirmPassword: z.string().min(1, "Confirm your password") })
+  .refine((value) => value.password === value.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Passwords don't match",
+  });
+
 export type RegisterInput = z.infer<typeof registerSchema>;
+export type RegisterFormValues = z.input<typeof registerFormSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
