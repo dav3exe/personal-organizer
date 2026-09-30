@@ -1,6 +1,9 @@
 /**
- * Tenant-isolation check: proves user A cannot GET, PATCH, or DELETE user B's
- * to-dos or notes, and that A's list never contains B's data.
+ * Tenant-isolation check: proves user A cannot GET, PATCH, DELETE (trash),
+ * restore, or permanently delete user B's to-dos or notes, and that neither
+ * A's list nor A's trash ever contains B's data.
+ *
+ * Needs multi-tenancy on (NEXT_PUBLIC_MULTI_TENANCY=true at build time).
  *
  * Usage (with the app running):
  *   npm run test:isolation                          # against http://localhost:3000
@@ -47,6 +50,9 @@ async function register(prefix: string): Promise<User> {
     password: `pw-${crypto.randomUUID()}`,
   });
   const cookie = res.setCookie.match(new RegExp(`${COOKIE_NAME}=([^;]+)`))?.[1];
+  if (res.status === 404) {
+    throw new Error("Accounts are turned off. Build with NEXT_PUBLIC_MULTI_TENANCY=true to run this check.");
+  }
   if (res.status !== 201 || !cookie) {
     throw new Error(`Could not register ${name}: ${res.status} ${JSON.stringify(res.body)}`);
   }
@@ -73,11 +79,32 @@ async function checkResource(kind: "todos" | "notes", owner: User, intruder: Use
   check(patch.status === 404, `${singular}: other user PATCH -> 404`, `got ${patch.status}`);
 
   const del = await request("DELETE", url, intruder);
-  check(del.status === 404, `${singular}: other user DELETE -> 404`, `got ${del.status}`);
+  check(del.status === 404, `${singular}: other user DELETE (trash) -> 404`, `got ${del.status}`);
 
-  const list = await request("GET", `/api/${kind}`, intruder);
-  const items = ((list.body.data as Json | undefined)?.[kind] ?? []) as Json[];
-  check(!items.some((item) => item.id === id), `${singular}: not in other user's list`);
+  const listIds = async (user: User, view: "active" | "trash") => {
+    const list = await request("GET", `/api/${kind}?view=${view}`, user);
+    return (((list.body.data as Json | undefined)?.[kind] ?? []) as Json[]).map((item) => item.id);
+  };
+  check(!(await listIds(intruder, "active")).includes(id), `${singular}: not in other user's list`);
+
+  // Owner moves it to the trash; the other user still can't see or touch it.
+  const trashed = await request("DELETE", url, owner);
+  check(
+    trashed.status === 200 && dataField(trashed, singular).deletedAt !== null,
+    `${singular}: owner can move to trash`,
+    `got ${trashed.status} ${JSON.stringify(trashed.body)}`
+  );
+  check((await listIds(owner, "trash")).includes(id), `${singular}: in owner's trash`);
+  check(!(await listIds(intruder, "trash")).includes(id), `${singular}: not in other user's trash`);
+
+  const restore = await request("POST", `${url}/restore`, intruder);
+  check(restore.status === 404, `${singular}: other user restore -> 404`, `got ${restore.status}`);
+
+  const destroy = await request("DELETE", `${url}/permanent`, intruder);
+  check(destroy.status === 404, `${singular}: other user permanent delete -> 404`, `got ${destroy.status}`);
+
+  const restored = await request("POST", `${url}/restore`, owner);
+  check(restored.status === 200, `${singular}: owner can restore`, `got ${restored.status}`);
 
   const anonymous = await request("GET", url);
   check(anonymous.status === 401, `${singular}: no session -> 401`, `got ${anonymous.status}`);
@@ -89,8 +116,14 @@ async function checkResource(kind: "todos" | "notes", owner: User, intruder: Use
     `got ${after.status} ${JSON.stringify(after.body)}`
   );
 
-  const cleanup = await request("DELETE", url, owner);
-  check(cleanup.status === 200, `${singular}: owner can delete (cleanup)`, `got ${cleanup.status}`);
+  // Cleanup: trash, then delete for good (permanent delete only works from the trash).
+  const activeDelete = await request("DELETE", `${url}/permanent`, owner);
+  check(activeDelete.status === 404, `${singular}: permanent delete of an active item -> 404`, `got ${activeDelete.status}`);
+  await request("DELETE", url, owner);
+  const cleanup = await request("DELETE", `${url}/permanent`, owner);
+  check(cleanup.status === 200, `${singular}: owner can delete forever (cleanup)`, `got ${cleanup.status}`);
+  const gone = await request("GET", url, owner);
+  check(gone.status === 404, `${singular}: gone after permanent delete`, `got ${gone.status}`);
 }
 
 try {
