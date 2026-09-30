@@ -25,12 +25,15 @@ const noteSchema = new Schema(
       trim: true,
       maxlength: NOTE_CONTENT_MAX,
     },
+    // Soft delete: set when moved to the trash, null while active.
+    deletedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
 
-// Serves every per-user query (userId prefix) and the newest-first listing.
-noteSchema.index({ userId: 1, createdAt: -1 });
+// Serves every per-user query (userId prefix), the active/trash split, and
+// the newest-first listing.
+noteSchema.index({ userId: 1, deletedAt: 1, createdAt: -1 });
 
 export type NoteAttrs = InferSchemaType<typeof noteSchema>;
 

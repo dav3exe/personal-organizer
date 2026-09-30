@@ -2,18 +2,18 @@
 
 import { CalendarDays, Pencil } from "lucide-react";
 
-import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
+import { MoveToTrashButton } from "@/components/shared/move-to-trash-button";
 import { TodoFormDialog } from "@/components/todos/todo-form";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useDeleteTodo, useUpdateTodo } from "@/hooks/use-todos";
+import { useTrashTodo, useUpdateTodo } from "@/hooks/use-todos";
 import { formatISODate, todayISODate } from "@/lib/date";
 import { cn } from "@/lib/utils";
 import type { Todo } from "@/types/todo";
 
 export function TodoCard({ todo }: { todo: Todo }) {
   const updateTodo = useUpdateTodo();
-  const deleteTodo = useDeleteTodo();
+  const trashTodo = useTrashTodo();
 
   const overdue = !todo.completed && !!todo.dueDate && todo.dueDate < todayISODate();
   const checkboxId = `todo-${todo.id}`;
@@ -72,11 +72,10 @@ export function TodoCard({ todo }: { todo: Todo }) {
             </Button>
           }
         />
-        <ConfirmDeleteDialog
-          itemLabel="to-do"
+        <MoveToTrashButton
           itemTitle={todo.title}
-          disabled={deleteTodo.isPending}
-          onConfirm={() => deleteTodo.mutate(todo.id)}
+          disabled={trashTodo.isPending}
+          onClick={() => trashTodo.mutate(todo.id)}
         />
       </div>
     </li>

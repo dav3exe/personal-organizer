@@ -5,7 +5,7 @@ import { ok } from "@/lib/api-response";
 import { requireSession } from "@/lib/auth";
 import { parseJsonBody, parseObjectId } from "@/lib/validation";
 import { updateNoteSchema } from "@/schemas/note";
-import { deleteNote, getNote, updateNote } from "@/services/note-service";
+import { getNote, trashNote, updateNote } from "@/services/note-service";
 
 type Context = RouteContext<"/api/notes/[id]">;
 
@@ -32,12 +32,13 @@ export async function PATCH(request: NextRequest, ctx: Context) {
   }
 }
 
+/** Soft delete: moves the note to the trash. See ./permanent for a hard delete. */
 export async function DELETE(_request: NextRequest, ctx: Context) {
   try {
     const { userId } = await requireSession();
     const noteId = parseObjectId((await ctx.params).id);
-    await deleteNote(userId, noteId);
-    return ok({ id: noteId });
+    const note = await trashNote(userId, noteId);
+    return ok({ note });
   } catch (error) {
     return handleApiError(error);
   }

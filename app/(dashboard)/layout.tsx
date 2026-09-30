@@ -2,11 +2,12 @@ import { redirect } from "next/navigation";
 
 import { Navbar } from "@/components/shared/navbar";
 import { getSession } from "@/lib/auth";
+import { MULTI_TENANCY_ENABLED } from "@/lib/features";
 
 // proxy.ts already redirects signed-out users; this is the server-side backstop.
+// With multi-tenancy off, data lives in the browser and there's no session to check.
 export default async function DashboardLayout({ children }: LayoutProps<"/">) {
-  const session = await getSession();
-  if (!session) redirect("/login");
+  if (MULTI_TENANCY_ENABLED && !(await getSession())) redirect("/login");
 
   return (
     <div className="flex flex-1 flex-col">

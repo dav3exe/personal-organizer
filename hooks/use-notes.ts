@@ -3,26 +3,41 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { apiFetch, getErrorMessage } from "@/lib/api-client";
+import {
+  listKey,
+  useDeleteForever,
+  useMoveToTrash,
+  useRestoreItem,
+  type TrashableResource,
+} from "@/hooks/use-trash";
+import { getErrorMessage } from "@/lib/api-client";
+import { noteCollection } from "@/lib/data/notes";
+import type { ListView } from "@/schemas/list-query";
 import type { CreateNoteInput, UpdateNoteInput } from "@/schemas/note";
 import type { Note } from "@/types/note";
 
 export const noteKeys = {
   all: ["notes"] as const,
+  list: (view: ListView) => listKey(noteKeys.all, view),
 };
 
-export function useNotes() {
+const noteResource: TrashableResource<Note> = {
+  queryKey: noteKeys.all,
+  collection: noteCollection,
+  label: "Note",
+};
+
+export function useNotes(view: ListView = "active") {
   return useQuery({
-    queryKey: noteKeys.all,
-    queryFn: async () => (await apiFetch<{ notes: Note[] }>("/api/notes")).notes,
+    queryKey: noteKeys.list(view),
+    queryFn: () => noteCollection.list(view),
   });
 }
 
 export function useCreateNote() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: CreateNoteInput) =>
-      (await apiFetch<{ note: Note }>("/api/notes", { method: "POST", body: input })).note,
+    mutationFn: (input: CreateNoteInput) => noteCollection.create(input),
     onSuccess: () => toast.success("Note added"),
     onError: (error) => toast.error(getErrorMessage(error)),
     onSettled: () => queryClient.invalidateQueries({ queryKey: noteKeys.all }),
@@ -32,29 +47,15 @@ export function useCreateNote() {
 export function useUpdateNote() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, input }: { id: string; input: UpdateNoteInput }) =>
-      (await apiFetch<{ note: Note }>(`/api/notes/${id}`, { method: "PATCH", body: input })).note,
+    mutationFn: ({ id, input }: { id: string; input: UpdateNoteInput }) =>
+      noteCollection.update(id, input),
     onSuccess: () => toast.success("Note updated"),
     onError: (error) => toast.error(getErrorMessage(error)),
     onSettled: () => queryClient.invalidateQueries({ queryKey: noteKeys.all }),
   });
 }
 
-export function useDeleteNote() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => apiFetch<{ id: string }>(`/api/notes/${id}`, { method: "DELETE" }),
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: noteKeys.all });
-      const previous = queryClient.getQueryData<Note[]>(noteKeys.all);
-      queryClient.setQueryData<Note[]>(noteKeys.all, (notes) => notes?.filter((n) => n.id !== id));
-      return { previous };
-    },
-    onError: (error, _id, context) => {
-      queryClient.setQueryData(noteKeys.all, context?.previous);
-      toast.error(getErrorMessage(error));
-    },
-    onSuccess: () => toast.success("Note deleted"),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: noteKeys.all }),
-  });
-}
+/** Soft delete: moves the note to the trash. */
+export const useTrashNote = () => useMoveToTrash(noteResource);
+export const useRestoreNote = () => useRestoreItem(noteResource);
+export const useDeleteNoteForever = () => useDeleteForever(noteResource);

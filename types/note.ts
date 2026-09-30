@@ -5,4 +5,6 @@ export type Note = {
   content: string;
   createdAt: string;
   updatedAt: string;
+  /** When it was moved to the trash; null while active. */
+  deletedAt: string | null;
 };
