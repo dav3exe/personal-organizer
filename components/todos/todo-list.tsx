@@ -5,6 +5,7 @@ import { ListTodo, Plus } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { CardListSkeleton } from "@/components/shared/loaders";
+import { LoadSampleDataButton } from "@/components/shared/sample-data-controls";
 import { TodoCard } from "@/components/todos/todo-card";
 import { TodoFormDialog } from "@/components/todos/todo-form";
 import { Button } from "@/components/ui/button";
@@ -56,7 +57,12 @@ export function TodoList() {
         icon={ListTodo}
         title="No to-dos yet"
         description="Add your first task and tick it off when it's done."
-        action={<NewTodoButton />}
+        action={
+          <div className="flex flex-wrap justify-center gap-2">
+            <NewTodoButton />
+            <LoadSampleDataButton />
+          </div>
+        }
       />
     );
   }

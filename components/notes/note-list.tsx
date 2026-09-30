@@ -7,6 +7,7 @@ import { NoteFormDialog } from "@/components/notes/note-form";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { CardListSkeleton } from "@/components/shared/loaders";
+import { LoadSampleDataButton } from "@/components/shared/sample-data-controls";
 import { Button } from "@/components/ui/button";
 import { useNotes } from "@/hooks/use-notes";
 import { getErrorMessage } from "@/lib/api-client";
@@ -39,7 +40,12 @@ export function NoteList() {
         icon={NotebookPen}
         title="No notes yet"
         description="Capture ideas, lists, and anything else worth keeping."
-        action={<NewNoteButton />}
+        action={
+          <div className="flex flex-wrap justify-center gap-2">
+            <NewNoteButton />
+            <LoadSampleDataButton />
+          </div>
+        }
       />
     );
   }

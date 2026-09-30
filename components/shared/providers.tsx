@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   MutationCache,
@@ -12,6 +12,8 @@ import { ThemeProvider } from "next-themes";
 
 import { Toaster } from "@/components/ui/sonner";
 import { ApiClientError } from "@/lib/api-client";
+import { LOCAL_STORAGE_PREFIX } from "@/lib/data/local-collection";
+import { MULTI_TENANCY_ENABLED } from "@/lib/features";
 
 // One QueryClient per tab, so one flag per tab is enough.
 let redirectingToLogin = false;
@@ -54,6 +56,19 @@ export function Providers({ children }: { children: ReactNode }) {
     });
     return client;
   });
+
+  // Local mode: another tab changed our data (the `storage` event only fires in
+  // other tabs), so refetch. A null key means localStorage was cleared.
+  useEffect(() => {
+    if (MULTI_TENANCY_ENABLED) return;
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === null || event.key.startsWith(LOCAL_STORAGE_PREFIX)) {
+        void queryClient.invalidateQueries();
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [queryClient]);
 
   return (
     <ThemeProvider
