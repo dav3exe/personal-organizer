@@ -3,14 +3,14 @@
 import { Pencil } from "lucide-react";
 
 import { NoteFormDialog } from "@/components/notes/note-form";
-import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
+import { MoveToTrashButton } from "@/components/shared/move-to-trash-button";
 import { Button } from "@/components/ui/button";
-import { useDeleteNote } from "@/hooks/use-notes";
+import { useTrashNote } from "@/hooks/use-notes";
 import { formatTimestamp } from "@/lib/date";
 import type { Note } from "@/types/note";
 
 export function NoteCard({ note }: { note: Note }) {
-  const deleteNote = useDeleteNote();
+  const trashNote = useTrashNote();
   const edited = note.updatedAt !== note.createdAt;
 
   return (
@@ -26,11 +26,10 @@ export function NoteCard({ note }: { note: Note }) {
               </Button>
             }
           />
-          <ConfirmDeleteDialog
-            itemLabel="note"
+          <MoveToTrashButton
             itemTitle={note.title}
-            disabled={deleteNote.isPending}
-            onConfirm={() => deleteNote.mutate(note.id)}
+            disabled={trashNote.isPending}
+            onClick={() => trashNote.mutate(note.id)}
           />
         </div>
       </div>

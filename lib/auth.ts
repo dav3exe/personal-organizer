@@ -4,9 +4,18 @@ import { cookies } from "next/headers";
 import { SignJWT, jwtVerify, errors as joseErrors } from "jose";
 
 import { errors } from "@/lib/api-error";
+import { MULTI_TENANCY_ENABLED } from "@/lib/features";
 import { isObjectIdString } from "@/lib/validation";
 
 // No database imports here: proxy.ts uses this file and must stay DB-free.
+
+/**
+ * Sign-up and sign-in only work when multi-tenancy is on. Without a way to get
+ * a session, every data route (which calls requireSession) is unreachable too.
+ */
+export function requireAccountsEnabled(): void {
+  if (!MULTI_TENANCY_ENABLED) throw errors.notFound("Accounts are turned off");
+}
 
 export const SESSION_COOKIE = "po_session";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days

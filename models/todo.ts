@@ -22,12 +22,15 @@ const todoSchema = new Schema(
     description: { type: String, trim: true, maxlength: TODO_DESCRIPTION_MAX },
     completed: { type: Boolean, default: false },
     dueDate: { type: Date },
+    // Soft delete: set when moved to the trash, null while active.
+    deletedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
 
-// Serves every per-user query (userId prefix) and the newest-first listing.
-todoSchema.index({ userId: 1, createdAt: -1 });
+// Serves every per-user query (userId prefix), the active/trash split, and
+// the newest-first listing.
+todoSchema.index({ userId: 1, deletedAt: 1, createdAt: -1 });
 
 export type TodoAttrs = InferSchemaType<typeof todoSchema>;
 

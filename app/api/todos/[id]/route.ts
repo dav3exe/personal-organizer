@@ -5,7 +5,7 @@ import { ok } from "@/lib/api-response";
 import { requireSession } from "@/lib/auth";
 import { parseJsonBody, parseObjectId } from "@/lib/validation";
 import { updateTodoSchema } from "@/schemas/todo";
-import { deleteTodo, getTodo, updateTodo } from "@/services/todo-service";
+import { getTodo, trashTodo, updateTodo } from "@/services/todo-service";
 
 type Context = RouteContext<"/api/todos/[id]">;
 
@@ -32,12 +32,13 @@ export async function PATCH(request: NextRequest, ctx: Context) {
   }
 }
 
+/** Soft delete: moves the todo to the trash. See ./permanent for a hard delete. */
 export async function DELETE(_request: NextRequest, ctx: Context) {
   try {
     const { userId } = await requireSession();
     const todoId = parseObjectId((await ctx.params).id);
-    await deleteTodo(userId, todoId);
-    return ok({ id: todoId });
+    const todo = await trashTodo(userId, todoId);
+    return ok({ todo });
   } catch (error) {
     return handleApiError(error);
   }

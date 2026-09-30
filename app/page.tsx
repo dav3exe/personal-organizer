@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { CheckSquare, NotebookPen, ShieldCheck } from "lucide-react";
+import { CheckSquare, HardDrive, NotebookPen, ShieldCheck, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { MULTI_TENANCY_ENABLED } from "@/lib/features";
 
 const features = [
   {
@@ -15,10 +16,21 @@ const features = [
     description: "Capture ideas and keep them organised.",
   },
   {
-    icon: ShieldCheck,
-    title: "Private by design",
-    description: "Your data is visible only to your account.",
+    icon: Trash2,
+    title: "Trash",
+    description: "Deleted items can be restored, or removed for good.",
   },
+  MULTI_TENANCY_ENABLED
+    ? {
+        icon: ShieldCheck,
+        title: "Private by design",
+        description: "Your data is visible only to your account.",
+      }
+    : {
+        icon: HardDrive,
+        title: "No sign-up",
+        description: "Everything is saved in this browser.",
+      },
 ];
 
 export default function HomePage() {
@@ -29,19 +41,29 @@ export default function HomePage() {
           Personal Organizer
         </h1>
         <p className="max-w-xl text-base text-muted-foreground sm:text-lg">
-          Your to-dos and notes in one place, private to your account.
+          {MULTI_TENANCY_ENABLED
+            ? "Your to-dos and notes in one place, private to your account."
+            : "Your to-dos and notes in one place, saved right in your browser."}
         </p>
         <div className="flex flex-col gap-3 sm:flex-row">
-          <Button asChild size="lg">
-            <Link href="/register">Get started</Link>
-          </Button>
-          <Button asChild size="lg" variant="outline">
-            <Link href="/login">Sign in</Link>
-          </Button>
+          {MULTI_TENANCY_ENABLED ? (
+            <>
+              <Button asChild size="lg">
+                <Link href="/register">Get started</Link>
+              </Button>
+              <Button asChild size="lg" variant="outline">
+                <Link href="/login">Sign in</Link>
+              </Button>
+            </>
+          ) : (
+            <Button asChild size="lg">
+              <Link href="/todos">Open the app</Link>
+            </Button>
+          )}
         </div>
       </div>
 
-      <ul className="grid w-full gap-4 sm:grid-cols-3">
+      <ul className="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {features.map(({ icon: Icon, title, description }) => (
           <li
             key={title}
